@@ -48,6 +48,8 @@ You can ask me about their products, regulatory licenses, partnerships, funding,
 META_KEYWORDS = {
     "coverage": [
         "what data do you cover", "what do you cover",
+        "which companies do you cover", "which companies do you have",
+        "what companies do you cover", "what companies do you have",
         "who do you cover", "what is your coverage", "list companies",
         "what topics", "what information", "introduce yourself",
         "what are you", "who are you", "what can you do",
@@ -264,4 +266,3 @@ if query := st.chat_input("Ask about DACH fintech companies..."):
 
         st.session_state.messages.append({"role": "assistant", "content": response, "sources": sources})
 
-        st.session_state.messages.append({"role": "assistant", "content": response, "sources": sources})
