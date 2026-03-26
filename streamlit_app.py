@@ -100,9 +100,7 @@ def get_companies_with_data():
         "warehouse": "PE_POC_WH",
     }
     resp = requests.post(url, headers=headers, json=body)
-    if resp.status_code != 200:
-        st.error(f"SQL API error {resp.status_code}: {resp.text[:500]}")
-        return set()
+    resp.raise_for_status()
     data = resp.json()
     companies = set()
     for row in data.get("data", []):
@@ -159,7 +157,6 @@ def filter_relevant_chunks(chunks):
     return [
         c for c in chunks
         if len(c.get("CHUNK_TEXT", "").strip()) > 50
-        and c.get("@scores", {}).get("reranker_score", -999) > MIN_RELEVANCE_SCORE
     ]
 
 def generate_answer(query, context_chunks):
@@ -184,10 +181,8 @@ def generate_answer(query, context_chunks):
     }
 
     resp = requests.post(url, headers=headers, json=body)
-    if resp.status_code != 200:
-        st.error(f"Search API error {resp.status_code}: {resp.text[:500]}")
-        return []
-    return resp.json().get("results", [])
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"]
 
 st.set_page_config(page_title="Fintech Due Diligence", layout="wide")
 st.title("Fintech Due Diligence Assistant")
@@ -266,5 +261,7 @@ if query := st.chat_input("Ask about DACH fintech companies..."):
             with st.expander("Sources"):
                 for s in sources:
                     st.markdown(f"- **{s['company']}** ({s['doc_type']}): [{s['url']}]({s['url']})")
+
+        st.session_state.messages.append({"role": "assistant", "content": response, "sources": sources})
 
         st.session_state.messages.append({"role": "assistant", "content": response, "sources": sources})
