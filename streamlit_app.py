@@ -100,7 +100,9 @@ def get_companies_with_data():
         "warehouse": "PE_POC_WH",
     }
     resp = requests.post(url, headers=headers, json=body)
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        st.error(f"SQL API error {resp.status_code}: {resp.text[:500]}")
+        return set()
     data = resp.json()
     companies = set()
     for row in data.get("data", []):
@@ -148,7 +150,9 @@ def search(query, company_filter=None, country_filter=None):
         body["filter"] = {"@and": filters}
 
     resp = requests.post(url, headers=headers, json=body)
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        st.error(f"Search API error {resp.status_code}: {resp.text[:500]}")
+        return []
     return resp.json().get("results", [])
 
 def filter_relevant_chunks(chunks):
@@ -180,8 +184,10 @@ def generate_answer(query, context_chunks):
     }
 
     resp = requests.post(url, headers=headers, json=body)
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"]
+    if resp.status_code != 200:
+        st.error(f"Search API error {resp.status_code}: {resp.text[:500]}")
+        return []
+    return resp.json().get("results", [])
 
 st.set_page_config(page_title="Fintech Due Diligence", layout="wide")
 st.title("Fintech Due Diligence Assistant")
