@@ -9,7 +9,7 @@ SEARCH_DB = "PE_POC_DB"
 SEARCH_SCHEMA = "SERVE"
 SEARCH_SERVICE = "FINTECH_HTML_SEARCH"
 LLM_MODEL = "claude-3-5-sonnet"
-NUM_RESULTS = 10
+NUM_RESULTS = 20
 MIN_RELEVANCE_SCORE = -8.0
 NO_INFO_MSG = "At the moment, we don't have data to answer this question. Please try a different company or rephrase your question."
 
