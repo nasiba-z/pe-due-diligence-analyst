@@ -117,10 +117,26 @@ def check_meta_query(query):
     for qualifier in LOCATION_QUALIFIERS:
         if qualifier in q:
             return None
-    for category, keywords in META_KEYWORDS.items():
-        for kw in keywords:
-            if kw in q:
-                return META_RESPONSES.get(category)
+
+    url = f"{ACCOUNT_URL}/api/v2/cortex/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {PAT}",
+        "Content-Type": "application/json",
+        "X-Snowflake-Authorization-Token-Type": "PROGRAMMATIC_ACCESS_TOKEN",
+    }
+    body = {
+        "model": LLM_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are a classifier. Respond with ONLY 'META' or 'DATA'.\n\nClassify the user's question:\n- META = question about the app itself, its capabilities, what data/companies it covers, how many companies, what it can do, who built it, how to use it\n- DATA = question about a specific company, industry topic, regulation, product, or any factual business question\n\nRespond with one word only."},
+            {"role": "user", "content": query},
+        ],
+        "max_tokens": 5,
+    }
+    resp = requests.post(url, headers=headers, json=body)
+    if resp.status_code == 200:
+        answer = resp.json()["choices"][0]["message"]["content"].strip().upper()
+        if "META" in answer:
+            return META_RESPONSES.get("coverage")
     return None
 
 def search(query, company_filter=None, country_filter=None):
