@@ -214,6 +214,20 @@ with st.sidebar:
                  "Raisin", "Finanzguru", "Bitpanda", "Credi2", "Wikifolio",
                  "Yapeal", "Selma Finance", "Relio", "Teylor"]
     selected_company = st.selectbox("Company", companies)
+    with st.sidebar:
+    st.header("Filters")
+    # ... existing filter code ...
+
+    st.divider()
+    st.markdown("**What this tool does:**")
+    st.markdown("""
+    - 🔍 Crawls monthly public company + BaFin data
+    - ⚙️ Extracts and processes signals (licensing, positioning, funding, etc.)
+    - 🧠 Enables semantic search within context across companies
+    """)
+    st.divider()
+    st.markdown("**Sample questions:**")
+    # ... existing sample questions ...
     st.divider()
     st.markdown("**Sample questions:**")
     st.markdown("- What regulatory licenses does Bitpanda hold?")
