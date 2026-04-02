@@ -117,26 +117,10 @@ def check_meta_query(query):
     for qualifier in LOCATION_QUALIFIERS:
         if qualifier in q:
             return None
-
-    url = f"{ACCOUNT_URL}/api/v2/cortex/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {PAT}",
-        "Content-Type": "application/json",
-        "X-Snowflake-Authorization-Token-Type": "PROGRAMMATIC_ACCESS_TOKEN",
-    }
-    body = {
-        "model": LLM_MODEL,
-        "messages": [
-            {"role": "system", "content": "You are a classifier. Respond with ONLY 'META' or 'DATA'.\n\nClassify the user's question:\n- META = question about the app itself, its capabilities, what data/companies it covers, how many companies, what it can do, who built it, how to use it\n- DATA = question about a specific company, industry topic, regulation, product, or any factual business question\n\nRespond with one word only."},
-            {"role": "user", "content": query},
-        ],
-        "max_tokens": 5,
-    }
-    resp = requests.post(url, headers=headers, json=body)
-    if resp.status_code == 200:
-        answer = resp.json()["choices"][0]["message"]["content"].strip().upper()
-        if "META" in answer:
-            return META_RESPONSES.get("coverage")
+    for category, keywords in META_KEYWORDS.items():
+        for kw in keywords:
+            if kw in q:
+                return META_RESPONSES.get(category)
     return None
 
 def search(query, company_filter=None, country_filter=None):
@@ -185,10 +169,17 @@ def generate_answer(query, context_chunks):
         "X-Snowflake-Authorization-Token-Type": "PROGRAMMATIC_ACCESS_TOKEN",
     }
 
-    context = "\n\n---\n\n".join(
-        [f"Company: {c['COMPANY_NAME']} | Country: {c.get('COUNTRY', 'N/A')} | Type: {c['DOC_TYPE']} | URL: {c['CRAWL_URL']}\n{c['CHUNK_TEXT']}"
-         for c in context_chunks]
-    )
+    context_parts = []
+    total_len = 0
+    max_context_len = 50000
+    for c in context_chunks:
+        part = f"Company: {c['COMPANY_NAME']} | Country: {c.get('COUNTRY', 'N/A')} | Type: {c['DOC_TYPE']} | URL: {c['CRAWL_URL']}\n{c['CHUNK_TEXT']}"
+        if total_len + len(part) > max_context_len:
+            break
+        context_parts.append(part)
+        total_len += len(part)
+
+    context = "\n\n---\n\n".join(context_parts)
 
     body = {
         "model": LLM_MODEL,
@@ -199,7 +190,10 @@ def generate_answer(query, context_chunks):
     }
 
     resp = requests.post(url, headers=headers, json=body)
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        error_detail = resp.text[:500] if resp.text else "No details"
+        st.error(f"LLM API error {resp.status_code}: {error_detail}")
+        return "Sorry, I encountered an error generating the answer. Please try again or rephrase your question."
     return resp.json()["choices"][0]["message"]["content"]
 
 st.set_page_config(page_title="Fintech Due Diligence", layout="wide")
@@ -214,13 +208,6 @@ with st.sidebar:
                  "Raisin", "Finanzguru", "Bitpanda", "Credi2", "Wikifolio",
                  "Yapeal", "Selma Finance", "Relio", "Teylor"]
     selected_company = st.selectbox("Company", companies)
-    st.divider()
-    st.markdown("**What this tool does:**")
-    st.markdown("""
-- 🔍 Crawls monthly public company + BaFin data
-- ⚙️ Extracts and processes signals (licensing, positioning, funding, etc.)
-- 🧠 Enables semantic search within context across companies
-""")
     st.divider()
     st.markdown("**Sample questions:**")
     st.markdown("- What regulatory licenses does Bitpanda hold?")
